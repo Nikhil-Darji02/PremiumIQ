@@ -164,11 +164,15 @@ iframe[title="streamlit_shortcuts"] { display: none !important; }
 # ─────────────────────────────────────────
 @st.cache_resource
 def load_artifacts():
-    base    = os.path.dirname(os.path.abspath(__file__))
-    model   = joblib.load(os.path.join(base, "model.pkl"))
-    columns = joblib.load(os.path.join(base, "columns.pkl"))
-    scaler  = joblib.load(os.path.join(base, "scaler.pkl")) if os.path.exists(os.path.join(base, "scaler.pkl")) else None
-    return model, columns, scaler
+    try:
+        base    = os.path.dirname(os.path.abspath(__file__))
+        model   = joblib.load(os.path.join(base, "model.pkl"))
+        columns = joblib.load(os.path.join(base, "columns.pkl"))
+        scaler  = joblib.load(os.path.join(base, "scaler.pkl")) if os.path.exists(os.path.join(base, "scaler.pkl")) else None
+        return model, columns, scaler
+    except Exception as e:
+        st.error(f"❌ Failed to load model files: {e}")
+        st.stop()
 
 @st.cache_resource
 def load_shap_explainer(_model, _columns, _scaler):
