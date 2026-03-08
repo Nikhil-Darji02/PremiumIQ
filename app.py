@@ -163,9 +163,8 @@ iframe[title="streamlit_shortcuts"] { display: none !important; }
 # LOAD MODEL
 # ─────────────────────────────────────────
 @st.cache_resource
-@st.cache_resource
 def load_artifacts():
-    base = os.path.dirname(os.path.abspath(__file__))
+    base    = os.path.dirname(os.path.abspath(__file__))
     model   = joblib.load(os.path.join(base, "model.pkl"))
     columns = joblib.load(os.path.join(base, "columns.pkl"))
     scaler  = joblib.load(os.path.join(base, "scaler.pkl")) if os.path.exists(os.path.join(base, "scaler.pkl")) else None
