@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import io
 from datetime import datetime
-
+st.write("✅ App started successfully")
 try:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
