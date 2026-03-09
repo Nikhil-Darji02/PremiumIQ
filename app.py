@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import io
 from datetime import datetime
-st.write("✅ App started successfully")
+
 try:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
@@ -164,15 +164,10 @@ iframe[title="streamlit_shortcuts"] { display: none !important; }
 # ─────────────────────────────────────────
 @st.cache_resource
 def load_artifacts():
-    try:
-        base    = os.path.dirname(os.path.abspath(__file__))
-        model   = joblib.load(os.path.join(base, "model.pkl"))
-        columns = joblib.load(os.path.join(base, "columns.pkl"))
-        scaler  = joblib.load(os.path.join(base, "scaler.pkl")) if os.path.exists(os.path.join(base, "scaler.pkl")) else None
-        return model, columns, scaler
-    except Exception as e:
-        st.error(f"❌ Failed to load model files: {e}")
-        st.stop()
+    model   = joblib.load("model.pkl")
+    columns = joblib.load("columns.pkl")
+    scaler  = joblib.load("scaler.pkl") if os.path.exists("scaler.pkl") else None
+    return model, columns, scaler
 
 @st.cache_resource
 def load_shap_explainer(_model, _columns, _scaler):
