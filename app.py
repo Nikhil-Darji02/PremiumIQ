@@ -36,8 +36,7 @@ st.set_page_config(
     page_title="PremiumIQ — Intelligent Health Insurance Risk Predictor",
     page_icon="🛡",
     layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={}
+    initial_sidebar_state="expanded"
 )
 
 # ─────────────────────────────────────────
