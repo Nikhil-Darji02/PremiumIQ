@@ -4,5 +4,5 @@ scikit-learn
 joblib
 matplotlib
 xgboost
-shap
+catboost
 numpy
