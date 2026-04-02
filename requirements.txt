@@ -2,5 +2,7 @@ streamlit
 pandas
 scikit-learn
 joblib
+matplotlib
 xgboost
 shap
+numpy
