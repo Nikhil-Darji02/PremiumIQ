@@ -2566,7 +2566,7 @@ with T8:
             f'<td style="padding:9px 14px;font-family:DM Mono,monospace;font-size:0.82rem;color:{C["gold"]};">\u20b9{p:,.0f}</td>'
             f'<td style="padding:9px 14px;font-size:0.75rem;color:#5a6a82;">\u20b9{lo:,.0f} \u2013 \u20b9{hi:,.0f}</td>'
             f'<td style="padding:9px 14px;font-size:0.75rem;color:{ychange_color};">{ychange}</td>'
-            f'</tr>'
+           
         )
     st.markdown(f"""
     <div style="overflow-x:auto;">
@@ -2578,7 +2578,6 @@ with T8:
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">Premium</th>
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">95% CI Range</th>
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">YoY Change</th>
-
         </tr>
       </thead>
       <tbody>{table_rows}</tbody>
