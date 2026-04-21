@@ -555,6 +555,64 @@ def fig_style(fig, axes=None):
         ax.grid(axis='y', color=C["border"], lw=0.5, alpha=0.6)
         ax.set_axisbelow(True)
 
+# ─────────────────────────────────────────
+# NATURAL LANGUAGE PARSER
+# ─────────────────────────────────────────
+def parse_nlp_input(text):
+    result = {}
+    t = text.lower()
+
+    # Age
+    age_m = re.search(r'(\d+)\s*(?:year|yr|y\.o|years old|yo)', t)
+    if age_m: result["Age"] = int(age_m.group(1))
+
+    # Height — support cm and metres
+    ht_cm = re.search(r'(\d{2,3})\s*cm', t)
+    ht_m  = re.search(r'(\d+\.?\d*)\s*m(?:etre|eter)?(?!\w)', t)
+    if ht_cm:
+        result["height"] = round(float(ht_cm.group(1)) / 100, 2)
+    elif ht_m:
+        result["height"] = round(float(ht_m.group(1)), 2)
+
+    # Weight — support kg and lbs
+    wt_kg  = re.search(r'(\d+\.?\d*)\s*kg', t)
+    wt_lbs = re.search(r'(\d+\.?\d*)\s*(?:lbs?|pounds?)', t)
+    if wt_kg:
+        result["weight"] = round(float(wt_kg.group(1)), 1)
+    elif wt_lbs:
+        result["weight"] = round(float(wt_lbs.group(1)) * 0.453592, 1)
+
+    # Auto-compute BMI if both height and weight parsed
+    if "height" in result and "weight" in result and result["height"] > 0:
+        bmi_calc = result["weight"] / (result["height"] ** 2)
+        result["bmi_computed"] = round(bmi_calc, 1)
+
+    # Dependents
+    ch_m = re.search(r'(\d+)\s*(?:child|children|kid|dependent)', t)
+    if ch_m: result["NumberOfMajorSurgeries"] = int(ch_m.group(1))
+    elif "no child" in t or "no kid" in t: result["NumberOfMajorSurgeries"] = 0
+
+    # Sex
+    if any(w in t for w in ["female","woman","girl","lady"]): result["sex"] = "female"
+    elif any(w in t for w in ["male","man","boy","guy"]):     result["sex"] = "male"
+
+    # Smoking
+    if any(w in t for w in ["non-smoker","non smoker","doesn't smoke","no smoke","not smoke"]): result["Diabetes"] = "no"
+    elif any(w in t for w in ["Diabetes","smoking","smokes"]): result["Diabetes"] = "yes"
+
+    # Region
+    for r in ["northeast","northwest","southeast","southwest"]:
+        if r in t: result["BloodPressureProblems"] = r; break
+
+    # Health conditions
+    if "diabetic" in t or "diabetes" in t: result["diabetes"] = 1
+    if "high bp" in t or "high blood pressure" in t or "hypertension" in t: result["blood_pressure"] = 2
+    elif "elevated bp" in t or "elevated blood pressure" in t: result["blood_pressure"] = 1
+    if "sedentary" in t or "no exercise" in t: result["exercise"] = 0
+    elif "very active" in t or "highly active" in t: result["exercise"] = 3
+    elif "moderate exercise" in t or "moderately active" in t: result["exercise"] = 2
+
+    return result
 
 # ─────────────────────────────────────────
 # CONFIDENCE INTERVAL
@@ -1020,6 +1078,35 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# ─────────────────────────────────────────
+# NATURAL LANGUAGE INPUT
+# ─────────────────────────────────────────
+with st.expander("🧠  Natural Language Input — describe a profile in plain English", expanded=False):
+    st.markdown('<p style="color:#5a6a82;font-size:0.8rem;margin-bottom:10px;">Try: <em>"32 year old male smoker, 172cm, 85kg, 2 children, northeast"</em> or <em>"55 year old diabetic female, 160cm, 70kg, high BP, sedentary"</em></p>', unsafe_allow_html=True)
+    nlp_col1, nlp_col2 = st.columns([5, 1], gap="small")
+    with nlp_col1:
+        nlp_text = st.text_input("Profile description", placeholder="e.g. 40 year old, 175cm, 90kg, diabetic, high BP ...", label_visibility="collapsed")
+    with nlp_col2:
+        nlp_btn = st.button("Parse →", width='stretch')
+    if nlp_btn and nlp_text:
+        parsed = parse_nlp_input(nlp_text)
+        if parsed:
+            display = {}
+            for k, v in parsed.items():
+                if k == "bmi_computed":
+                    display["BMI (auto)"] = f"{v} (from height & weight)"
+                elif k == "height":
+                    display["Height"] = f"{v} m"
+                elif k == "weight":
+                    display["Weight"] = f"{v} kg"
+                else:
+                    display[k.replace('_',' ').title()] = str(v)
+            parts = [f"**{k}** → `{v}`" for k, v in display.items()]
+            st.success("✅ Parsed: " + "  ·  ".join(parts) + "  — Update the sidebar sliders to match.")
+        else:
+            st.warning("⚠ Could not parse. Try including age, height, weight e.g. '35 year old female non-smoker, 165cm, 60kg'")
+
+st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # KPI STRIP
@@ -1126,19 +1213,20 @@ with T1:
         imps    = [0.285, 0.198, 0.152, 0.098, 0.087, 0.071, 0.065, 0.044]
         f_cols  = [C["danger"] if v>0.1 else C["warning"] if v>0.03 else C["muted"] for v in imps]
 
-        fig, ax = plt.subplots(figsize=(4, 3))
+        fig, ax = plt.subplots(figsize=(5, 3.2))
         fig.patch.set_facecolor(C["bg2"])
         ax.set_facecolor(C["bg2"])
         y_pos = range(len(feats))
         bars  = ax.barh(list(y_pos), imps, color=f_cols, height=0.55, edgecolor="none", zorder=3)
         for bar, val in zip(bars, imps):
-            ax.text(val+0.005, bar.get_y()+bar.get_height()/2,
+            ax.text(val + 0.004, bar.get_y() + bar.get_height() / 2,
                     f"{val:.1%}", va='center', color=C["plat"], fontsize=7.5, fontweight='500')
         ax.set_yticks(list(y_pos))
         ax.set_yticklabels(feats, fontsize=8.5, color=C["plat"])
         ax.set_xlabel("Importance Weight", fontsize=8, color=C["muted"])
         ax.set_title("Stacking Ensemble Feature Importance", fontsize=9.5, color=C["plat"], pad=12, fontweight='600')
         ax.invert_yaxis()
+        ax.set_xlim(0, max(imps) * 1.25)
         ax.grid(axis='x', color=C["border"], lw=0.5, alpha=0.5)
         ax.set_axisbelow(True)
         ax.tick_params(colors=C["muted"])
@@ -1148,8 +1236,20 @@ with T1:
             mpatches.Patch(color=C["warning"], label='Moderate (3–10%)'),
             mpatches.Patch(color=C["muted"],   label='Minor (<3%)'),
         ]
-        ax.legend(handles=legend_items, fontsize=7, loc='lower right', framealpha=0, labelcolor=C["plat"])
+        ax.legend(
+            handles=legend_items,
+            fontsize=7,
+            loc='upper center',
+            bbox_to_anchor=(0.5, -0.18),
+            ncol=3,
+            framealpha=0,
+            labelcolor=C["plat"],
+            handlelength=1.2,
+            handletextpad=0.5,
+            columnspacing=1.0,
+        )
         plt.tight_layout(pad=1.5)
+        plt.subplots_adjust(bottom=0.18)
         st.pyplot(fig, width='stretch')
         plt.close()
 
@@ -2469,18 +2569,15 @@ with T8:
     st.markdown('<div style="font-size:0.68rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">Year-by-Year Breakdown</div>', unsafe_allow_html=True)
     table_rows = ""
     for i, (a, p, lo, hi) in enumerate(zip(ages_f, preds_f, lows_f, highs_f)):
-        ychange = "" if i == 0 else f"+\u20b9{p - preds_f[i-1]:,.0f}"
-        row_bg = "background:rgba(255,255,255,0.015);" if i % 2 == 0 else ""
-        ychange_color = C['success'] if ychange == "" else C['warning']
-        table_rows += (
-            f'<tr style="border-bottom:1px solid rgba(255,255,255,0.04);{row_bg}">'
-            f'<td style="padding:9px 14px;font-size:0.78rem;color:#5a6a82;">Year {i}</td>'
-            f'<td style="padding:9px 14px;font-size:0.78rem;color:#d4dae6;">Age {a}</td>'
-            f'<td style="padding:9px 14px;font-family:DM Mono,monospace;font-size:0.82rem;color:{C["gold"]};">\u20b9{p:,.0f}</td>'
-            f'<td style="padding:9px 14px;font-size:0.75rem;color:#5a6a82;">\u20b9{lo:,.0f} \u2013 \u20b9{hi:,.0f}</td>'
-            f'<td style="padding:9px 14px;font-size:0.75rem;color:{ychange_color};">{ychange}</td>'
-           
-        )
+        ychange = "" if i == 0 else f"+₹{p - preds_f[i-1]:,.0f}"
+        table_rows += f"""
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);{'background:rgba(255,255,255,0.015)' if i%2==0 else ''}">
+          <td style="padding:9px 14px;font-size:0.78rem;color:#5a6a82;">Year {i}</td>
+          <td style="padding:9px 14px;font-size:0.78rem;color:#d4dae6;">Age {a}</td>
+          <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:0.82rem;color:{C['gold']};">₹{p:,.0f}</td>
+          <td style="padding:9px 14px;font-size:0.75rem;color:#5a6a82;">₹{lo:,.0f} – ₹{hi:,.0f}</td>
+          <td style="padding:9px 14px;font-size:0.75rem;color:{C['success'] if ychange=='' else C['warning']};">{ychange}</td>
+        </tr>"""
     st.markdown(f"""
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;">
@@ -2491,6 +2588,7 @@ with T8:
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">Premium</th>
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">95% CI Range</th>
           <th style="padding:10px 14px;font-size:0.65rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1px;text-align:left;">YoY Change</th>
+
         </tr>
       </thead>
       <tbody>{table_rows}</tbody>
@@ -2729,44 +2827,46 @@ with T9:
             for f in ins["features"]
         ])
 
-        row_bg2 = "background:rgba(255,255,255,0.015);" if i % 2 == 0 else ""
-        rows_html += (
-            f'<tr style="border-bottom:1px solid rgba(255,255,255,0.04);{row_bg2}">'
-            f'<td style="padding:14px 16px;vertical-align:top;">'
-            f'<div style="display:flex;align-items:center;gap:8px;">'
-            f'<span style="font-size:1.1rem;">{ins["logo"]}</span>'
-            f'<div>'
-            f'<div style="font-size:0.85rem;font-weight:600;color:{ins["color"]};">{ins["name"]}{rank_badge}</div>'
-            f'<div style="font-size:0.72rem;color:#5a6a82;margin-top:2px;">{ins["plan"]}</div>'
-            f'</div></div></td>'
-            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
-            f'<div style="font-family:DM Mono,monospace;font-size:1.05rem;font-weight:600;color:{ins["color"]};">\u20b9{ins["market_premium"]:,.0f}</div>'
-            f'<div style="font-size:0.68rem;color:#3d4f66;margin-top:2px;">\u20b9{ins["market_premium"]//12:,.0f}/mo</div>'
-            f'</td>'
-            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
-            f'<div style="font-size:0.85rem;font-weight:600;color:{csr_color};">{ins["csr"]}%</div>'
-            f'<div style="font-size:0.68rem;color:#3d4f66;">Claim settled</div>'
-            f'</td>'
-            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
-            f'<div style="font-size:0.85rem;color:#d4dae6;">{ins["network"]:,}</div>'
-            f'<div style="font-size:0.68rem;color:#3d4f66;">hospitals</div>'
-            f'</td>'
-            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
-            f'<div style="font-size:0.85rem;color:{wait_color};">{ins["wait"]} yr</div>'
-            f'<div style="font-size:0.68rem;color:#3d4f66;">PED wait</div>'
-            f'</td>'
-            f'<td style="padding:14px 16px;vertical-align:top;">'
-            f'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">{feat_pills}</div>'
-            f'<div style="font-size:0.7rem;color:#5a6a82;font-style:italic;">{ins["best_for"]}</div>'
-            f'</td>'
-            f'<td style="padding:14px 16px;vertical-align:middle;text-align:center;">'
-            f'<a href="{ins["url"]}" target="_blank" '
-            f'style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);'
-            f'color:#d4dae6;font-size:0.72rem;padding:6px 14px;border-radius:6px;'
-            f'text-decoration:none;white-space:nowrap;">Get Quote \u2192</a>'
-            f'</td>'
-            f'</tr>'
-        )
+        rows_html += f"""
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);{'background:rgba(255,255,255,0.015)' if i%2==0 else ''}">
+          <td style="padding:14px 16px;vertical-align:top;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:1.1rem;">{ins['logo']}</span>
+              <div>
+                <div style="font-size:0.85rem;font-weight:600;color:{ins['color']};">{ins['name']}{rank_badge}</div>
+                <div style="font-size:0.72rem;color:#5a6a82;margin-top:2px;">{ins['plan']}</div>
+              </div>
+            </div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
+            <div style="font-family:'DM Mono',monospace;font-size:1.05rem;font-weight:600;color:{ins['color']};">₹{ins['market_premium']:,.0f}</div>
+            <div style="font-size:0.68rem;color:#3d4f66;margin-top:2px;">₹{ins['market_premium']//12:,.0f}/mo</div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
+            <div style="font-size:0.85rem;font-weight:600;color:{csr_color};">{ins['csr']}%</div>
+            <div style="font-size:0.68rem;color:#3d4f66;">Claim settled</div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
+            <div style="font-size:0.85rem;color:#d4dae6;">{ins['network']:,}</div>
+            <div style="font-size:0.68rem;color:#3d4f66;">hospitals</div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
+            <div style="font-size:0.85rem;color:{wait_color};">{ins['wait']} yr</div>
+            <div style="font-size:0.68rem;color:#3d4f66;">PED wait</div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:top;">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">{feat_pills}</div>
+            <div style="font-size:0.7rem;color:#5a6a82;font-style:italic;">{ins['best_for']}</div>
+          </td>
+          <td style="padding:14px 16px;vertical-align:middle;text-align:center;">
+            <a href="{ins['url']}" target="_blank"
+               style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+                      color:#d4dae6;font-size:0.72rem;padding:6px 14px;border-radius:6px;
+                      text-decoration:none;white-space:nowrap;">
+              Get Quote →
+            </a>
+          </td>
+        </tr>"""
 
     # Also add Our ML Model row at bottom
     rows_html += f"""
