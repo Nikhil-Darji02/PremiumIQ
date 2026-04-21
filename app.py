@@ -555,64 +555,6 @@ def fig_style(fig, axes=None):
         ax.grid(axis='y', color=C["border"], lw=0.5, alpha=0.6)
         ax.set_axisbelow(True)
 
-# ─────────────────────────────────────────
-# NATURAL LANGUAGE PARSER
-# ─────────────────────────────────────────
-def parse_nlp_input(text):
-    result = {}
-    t = text.lower()
-
-    # Age
-    age_m = re.search(r'(\d+)\s*(?:year|yr|y\.o|years old|yo)', t)
-    if age_m: result["Age"] = int(age_m.group(1))
-
-    # Height — support cm and metres
-    ht_cm = re.search(r'(\d{2,3})\s*cm', t)
-    ht_m  = re.search(r'(\d+\.?\d*)\s*m(?:etre|eter)?(?!\w)', t)
-    if ht_cm:
-        result["height"] = round(float(ht_cm.group(1)) / 100, 2)
-    elif ht_m:
-        result["height"] = round(float(ht_m.group(1)), 2)
-
-    # Weight — support kg and lbs
-    wt_kg  = re.search(r'(\d+\.?\d*)\s*kg', t)
-    wt_lbs = re.search(r'(\d+\.?\d*)\s*(?:lbs?|pounds?)', t)
-    if wt_kg:
-        result["weight"] = round(float(wt_kg.group(1)), 1)
-    elif wt_lbs:
-        result["weight"] = round(float(wt_lbs.group(1)) * 0.453592, 1)
-
-    # Auto-compute BMI if both height and weight parsed
-    if "height" in result and "weight" in result and result["height"] > 0:
-        bmi_calc = result["weight"] / (result["height"] ** 2)
-        result["bmi_computed"] = round(bmi_calc, 1)
-
-    # Dependents
-    ch_m = re.search(r'(\d+)\s*(?:child|children|kid|dependent)', t)
-    if ch_m: result["NumberOfMajorSurgeries"] = int(ch_m.group(1))
-    elif "no child" in t or "no kid" in t: result["NumberOfMajorSurgeries"] = 0
-
-    # Sex
-    if any(w in t for w in ["female","woman","girl","lady"]): result["sex"] = "female"
-    elif any(w in t for w in ["male","man","boy","guy"]):     result["sex"] = "male"
-
-    # Smoking
-    if any(w in t for w in ["non-smoker","non smoker","doesn't smoke","no smoke","not smoke"]): result["Diabetes"] = "no"
-    elif any(w in t for w in ["Diabetes","smoking","smokes"]): result["Diabetes"] = "yes"
-
-    # Region
-    for r in ["northeast","northwest","southeast","southwest"]:
-        if r in t: result["BloodPressureProblems"] = r; break
-
-    # Health conditions
-    if "diabetic" in t or "diabetes" in t: result["diabetes"] = 1
-    if "high bp" in t or "high blood pressure" in t or "hypertension" in t: result["blood_pressure"] = 2
-    elif "elevated bp" in t or "elevated blood pressure" in t: result["blood_pressure"] = 1
-    if "sedentary" in t or "no exercise" in t: result["exercise"] = 0
-    elif "very active" in t or "highly active" in t: result["exercise"] = 3
-    elif "moderate exercise" in t or "moderately active" in t: result["exercise"] = 2
-
-    return result
 
 # ─────────────────────────────────────────
 # CONFIDENCE INTERVAL
@@ -1078,35 +1020,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
-# NATURAL LANGUAGE INPUT
-# ─────────────────────────────────────────
-with st.expander("🧠  Natural Language Input — describe a profile in plain English", expanded=False):
-    st.markdown('<p style="color:#5a6a82;font-size:0.8rem;margin-bottom:10px;">Try: <em>"32 year old male smoker, 172cm, 85kg, 2 children, northeast"</em> or <em>"55 year old diabetic female, 160cm, 70kg, high BP, sedentary"</em></p>', unsafe_allow_html=True)
-    nlp_col1, nlp_col2 = st.columns([5, 1], gap="small")
-    with nlp_col1:
-        nlp_text = st.text_input("Profile description", placeholder="e.g. 40 year old, 175cm, 90kg, diabetic, high BP ...", label_visibility="collapsed")
-    with nlp_col2:
-        nlp_btn = st.button("Parse →", width='stretch')
-    if nlp_btn and nlp_text:
-        parsed = parse_nlp_input(nlp_text)
-        if parsed:
-            display = {}
-            for k, v in parsed.items():
-                if k == "bmi_computed":
-                    display["BMI (auto)"] = f"{v} (from height & weight)"
-                elif k == "height":
-                    display["Height"] = f"{v} m"
-                elif k == "weight":
-                    display["Weight"] = f"{v} kg"
-                else:
-                    display[k.replace('_',' ').title()] = str(v)
-            parts = [f"**{k}** → `{v}`" for k, v in display.items()]
-            st.success("✅ Parsed: " + "  ·  ".join(parts) + "  — Update the sidebar sliders to match.")
-        else:
-            st.warning("⚠ Could not parse. Try including age, height, weight e.g. '35 year old female non-smoker, 165cm, 60kg'")
-
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # KPI STRIP
