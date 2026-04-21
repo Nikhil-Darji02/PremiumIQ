@@ -2556,15 +2556,18 @@ with T8:
     st.markdown('<div style="font-size:0.68rem;color:#5a6a82;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">Year-by-Year Breakdown</div>', unsafe_allow_html=True)
     table_rows = ""
     for i, (a, p, lo, hi) in enumerate(zip(ages_f, preds_f, lows_f, highs_f)):
-        ychange = "" if i == 0 else f"+₹{p - preds_f[i-1]:,.0f}"
-        table_rows += f"""
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);{'background:rgba(255,255,255,0.015)' if i%2==0 else ''}">
-          <td style="padding:9px 14px;font-size:0.78rem;color:#5a6a82;">Year {i}</td>
-          <td style="padding:9px 14px;font-size:0.78rem;color:#d4dae6;">Age {a}</td>
-          <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:0.82rem;color:{C['gold']};">₹{p:,.0f}</td>
-          <td style="padding:9px 14px;font-size:0.75rem;color:#5a6a82;">₹{lo:,.0f} – ₹{hi:,.0f}</td>
-          <td style="padding:9px 14px;font-size:0.75rem;color:{C['success'] if ychange=='' else C['warning']};">{ychange}</td>
-        </tr>"""
+        ychange = "" if i == 0 else f"+\u20b9{p - preds_f[i-1]:,.0f}"
+        row_bg = "background:rgba(255,255,255,0.015);" if i % 2 == 0 else ""
+        ychange_color = C['success'] if ychange == "" else C['warning']
+        table_rows += (
+            f'<tr style="border-bottom:1px solid rgba(255,255,255,0.04);{row_bg}">'
+            f'<td style="padding:9px 14px;font-size:0.78rem;color:#5a6a82;">Year {i}</td>'
+            f'<td style="padding:9px 14px;font-size:0.78rem;color:#d4dae6;">Age {a}</td>'
+            f'<td style="padding:9px 14px;font-family:DM Mono,monospace;font-size:0.82rem;color:{C["gold"]};">\u20b9{p:,.0f}</td>'
+            f'<td style="padding:9px 14px;font-size:0.75rem;color:#5a6a82;">\u20b9{lo:,.0f} \u2013 \u20b9{hi:,.0f}</td>'
+            f'<td style="padding:9px 14px;font-size:0.75rem;color:{ychange_color};">{ychange}</td>'
+            f'</tr>'
+        )
     st.markdown(f"""
     <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;">
@@ -2814,46 +2817,44 @@ with T9:
             for f in ins["features"]
         ])
 
-        rows_html += f"""
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);{'background:rgba(255,255,255,0.015)' if i%2==0 else ''}">
-          <td style="padding:14px 16px;vertical-align:top;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:1.1rem;">{ins['logo']}</span>
-              <div>
-                <div style="font-size:0.85rem;font-weight:600;color:{ins['color']};">{ins['name']}{rank_badge}</div>
-                <div style="font-size:0.72rem;color:#5a6a82;margin-top:2px;">{ins['plan']}</div>
-              </div>
-            </div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-            <div style="font-family:'DM Mono',monospace;font-size:1.05rem;font-weight:600;color:{ins['color']};">₹{ins['market_premium']:,.0f}</div>
-            <div style="font-size:0.68rem;color:#3d4f66;margin-top:2px;">₹{ins['market_premium']//12:,.0f}/mo</div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-            <div style="font-size:0.85rem;font-weight:600;color:{csr_color};">{ins['csr']}%</div>
-            <div style="font-size:0.68rem;color:#3d4f66;">Claim settled</div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-            <div style="font-size:0.85rem;color:#d4dae6;">{ins['network']:,}</div>
-            <div style="font-size:0.68rem;color:#3d4f66;">hospitals</div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-            <div style="font-size:0.85rem;color:{wait_color};">{ins['wait']} yr</div>
-            <div style="font-size:0.68rem;color:#3d4f66;">PED wait</div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:top;">
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">{feat_pills}</div>
-            <div style="font-size:0.7rem;color:#5a6a82;font-style:italic;">{ins['best_for']}</div>
-          </td>
-          <td style="padding:14px 16px;vertical-align:middle;text-align:center;">
-            <a href="{ins['url']}" target="_blank"
-               style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
-                      color:#d4dae6;font-size:0.72rem;padding:6px 14px;border-radius:6px;
-                      text-decoration:none;white-space:nowrap;">
-              Get Quote →
-            </a>
-          </td>
-        </tr>"""
+        row_bg2 = "background:rgba(255,255,255,0.015);" if i % 2 == 0 else ""
+        rows_html += (
+            f'<tr style="border-bottom:1px solid rgba(255,255,255,0.04);{row_bg2}">'
+            f'<td style="padding:14px 16px;vertical-align:top;">'
+            f'<div style="display:flex;align-items:center;gap:8px;">'
+            f'<span style="font-size:1.1rem;">{ins["logo"]}</span>'
+            f'<div>'
+            f'<div style="font-size:0.85rem;font-weight:600;color:{ins["color"]};">{ins["name"]}{rank_badge}</div>'
+            f'<div style="font-size:0.72rem;color:#5a6a82;margin-top:2px;">{ins["plan"]}</div>'
+            f'</div></div></td>'
+            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
+            f'<div style="font-family:DM Mono,monospace;font-size:1.05rem;font-weight:600;color:{ins["color"]};">\u20b9{ins["market_premium"]:,.0f}</div>'
+            f'<div style="font-size:0.68rem;color:#3d4f66;margin-top:2px;">\u20b9{ins["market_premium"]//12:,.0f}/mo</div>'
+            f'</td>'
+            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
+            f'<div style="font-size:0.85rem;font-weight:600;color:{csr_color};">{ins["csr"]}%</div>'
+            f'<div style="font-size:0.68rem;color:#3d4f66;">Claim settled</div>'
+            f'</td>'
+            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
+            f'<div style="font-size:0.85rem;color:#d4dae6;">{ins["network"]:,}</div>'
+            f'<div style="font-size:0.68rem;color:#3d4f66;">hospitals</div>'
+            f'</td>'
+            f'<td style="padding:14px 16px;vertical-align:top;text-align:center;">'
+            f'<div style="font-size:0.85rem;color:{wait_color};">{ins["wait"]} yr</div>'
+            f'<div style="font-size:0.68rem;color:#3d4f66;">PED wait</div>'
+            f'</td>'
+            f'<td style="padding:14px 16px;vertical-align:top;">'
+            f'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">{feat_pills}</div>'
+            f'<div style="font-size:0.7rem;color:#5a6a82;font-style:italic;">{ins["best_for"]}</div>'
+            f'</td>'
+            f'<td style="padding:14px 16px;vertical-align:middle;text-align:center;">'
+            f'<a href="{ins["url"]}" target="_blank" '
+            f'style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);'
+            f'color:#d4dae6;font-size:0.72rem;padding:6px 14px;border-radius:6px;'
+            f'text-decoration:none;white-space:nowrap;">Get Quote \u2192</a>'
+            f'</td>'
+            f'</tr>'
+        )
 
     # Also add Our ML Model row at bottom
     rows_html += f"""
