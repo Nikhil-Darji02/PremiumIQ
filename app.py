@@ -1078,35 +1078,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────
-# NATURAL LANGUAGE INPUT
-# ─────────────────────────────────────────
-with st.expander("🧠  Natural Language Input — describe a profile in plain English", expanded=False):
-    st.markdown('<p style="color:#5a6a82;font-size:0.8rem;margin-bottom:10px;">Try: <em>"32 year old male smoker, 172cm, 85kg, 2 children, northeast"</em> or <em>"55 year old diabetic female, 160cm, 70kg, high BP, sedentary"</em></p>', unsafe_allow_html=True)
-    nlp_col1, nlp_col2 = st.columns([5, 1], gap="small")
-    with nlp_col1:
-        nlp_text = st.text_input("Profile description", placeholder="e.g. 40 year old, 175cm, 90kg, diabetic, high BP ...", label_visibility="collapsed")
-    with nlp_col2:
-        nlp_btn = st.button("Parse →", width='stretch')
-    if nlp_btn and nlp_text:
-        parsed = parse_nlp_input(nlp_text)
-        if parsed:
-            display = {}
-            for k, v in parsed.items():
-                if k == "bmi_computed":
-                    display["BMI (auto)"] = f"{v} (from height & weight)"
-                elif k == "height":
-                    display["Height"] = f"{v} m"
-                elif k == "weight":
-                    display["Weight"] = f"{v} kg"
-                else:
-                    display[k.replace('_',' ').title()] = str(v)
-            parts = [f"**{k}** → `{v}`" for k, v in display.items()]
-            st.success("✅ Parsed: " + "  ·  ".join(parts) + "  — Update the sidebar sliders to match.")
-        else:
-            st.warning("⚠ Could not parse. Try including age, height, weight e.g. '35 year old female non-smoker, 165cm, 60kg'")
 
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # KPI STRIP
